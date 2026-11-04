@@ -125,7 +125,7 @@ return [
     'packages' => [
         \Diana\Router\Framework\RouterModule::class,
         \App\AppController::class,
-        \App\RenderingPackage::class,
+        \Diana\Rendering\RenderingPackage::class,
     ],
 ];
 ```
