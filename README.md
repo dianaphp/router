@@ -1,7 +1,7 @@
 # Diana Router
 
 `dianaphp/router` provides attribute-based HTTP and console routing. The package
-requires PHP 8.3+, `dianaphp/sdk` and `dianaphp/lib`. Router and framework can each
+requires PHP 8.5.12+, `dianaphp/sdk` and `dianaphp/lib`. Router and framework can each
 be installed independently.
 
 ## Package structure
