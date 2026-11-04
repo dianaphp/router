@@ -56,6 +56,7 @@ class Route implements RouteContract
             'controller' => $this->controller,
             'method' => $this->method,
             'middleware' => $this->middleware,
+            'params' => $this->params,
             'segments' => $this->segments
         ];
     }

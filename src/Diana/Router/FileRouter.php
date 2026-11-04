@@ -107,13 +107,22 @@ class FileRouter extends Router implements RouterContract
 
         if (empty($args)) {
             throw new MissingArgumentsException(
-                'Route [' . $route['controller'] . '@' . $route['method'] . '] does not provide a path.'
+                'Route [' . $route->getController() . '@' . $route->getMethod() . '] does not provide a path.'
             );
         }
 
         if (is_a($attributeName, Command::class, true)) {
-            $command = array_shift($args);
-            $route->setParameters($args);
+            $command = $args['command'] ?? $args[0] ?? null;
+            if ($command === null) {
+                throw new MissingArgumentsException('Command does not provide a name.');
+            }
+
+            // Keep supporting the legacy positional form: Command('demo', 'first', 'second').
+            $arguments = $args['args'] ?? $args[1] ?? [];
+            if (!is_array($arguments)) {
+                $arguments = array_slice($args, 1);
+            }
+            $route->setParameters($arguments);
             $this->commands[$command] = $route;
             return;
         }
@@ -129,7 +138,11 @@ class FileRouter extends Router implements RouterContract
             $path .= trim($controller::$route, '/') . '/';
         }
 
-        $path .= trim($args[0], '/');
+        $attributePath = $args['path'] ?? $args[0] ?? null;
+        if ($attributePath === null) {
+            throw new MissingArgumentsException('Route does not provide a path.');
+        }
+        $path .= trim($attributePath, '/');
 
         if (array_key_exists($path, $this->routes[$attributeMethod])) {
             throw new DuplicateRouteException(

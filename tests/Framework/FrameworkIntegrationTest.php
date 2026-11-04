@@ -52,6 +52,14 @@ class FrameworkIntegrationTest extends TestCase
         self::assertSame(1, $app->runCommand('missing')->getStatusCode());
     }
 
+    public function testCommandParametersReachTheControllerAndDefaultsSurviveRepeatedCalls(): void
+    {
+        $app = new RouterIntegrationApplication('/example', new ClassLoader(), new RouterIntegrationConfig());
+
+        self::assertSame('one:two:json', (string) $app->runCommand('arguments one two --format json'));
+        self::assertSame('new:default:text', (string) $app->runCommand('arguments new'));
+    }
+
     public function testGlobalMiddlewareWrapsResolutionRouteMiddlewareAndController(): void
     {
         $app = new RouterIntegrationApplication('/example', new ClassLoader(), new RouterIntegrationConfig([
@@ -223,6 +231,12 @@ class RouterIntegrationController
     {
         IntegrationTrace::$events[] = 'controller';
         return 'Hello ' . $name;
+    }
+
+    #[Command(command: 'arguments', args: ['first', '?second'])]
+    public function arguments(string $first, string $second = 'default', string $format = 'text'): string
+    {
+        return $first . ':' . $second . ':' . $format;
     }
 
     #[Command('hello')]

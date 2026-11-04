@@ -52,9 +52,8 @@ abstract class Router implements RouterContract
         $segments = explode('/', $trim);
         $segmentCount = count($segments);
 
-        $params = [];
-
         foreach ($this->routes[$method] ?? [] as $route) {
+            $params = [];
             $routeSegments = $route->getSegments();
             if ($segmentCount != count($routeSegments)) {
                 continue;
@@ -68,6 +67,7 @@ abstract class Router implements RouterContract
                 }
             }
 
+            $route = clone $route;
             $route->setParameters($params);
             return $route;
         }
@@ -82,6 +82,7 @@ abstract class Router implements RouterContract
     {
         if (isset($this->commands[$command])) {
             $route = $this->commands[$command];
+            $argumentNames = $route->getParameters();
 
             $params = [];
 
@@ -104,18 +105,15 @@ abstract class Router implements RouterContract
 
             $size = sizeof($args);
             for ($i = 0; $i < $size; $i++) {
-                $params = $route->getParameters();
-                if (!isset($params[$i])) {
+                if (!isset($argumentNames[$i])) {
                     continue;
                 }
 
-                if ($params[$i][0] === '?') {
-                    $params[$i] = substr($params[$i], 1);
-                }
-
-                $params[$params[$i]] = $args[$i];
+                $name = ltrim($argumentNames[$i], '?');
+                $params[$name] = $args[$i];
             }
 
+            $route = clone $route;
             $route->setParameters($params);
 
             return $route;
