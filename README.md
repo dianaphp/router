@@ -76,6 +76,11 @@ error route, registers the resolved route in the container and delegates to a
 nested pipeline containing route middleware and controller execution.
 Route parameters and `statusCode` are injected into the controller method.
 Returning from route middleware without `$next()` skips the controller.
+It also skips construction and execution of later route middleware. Use
+`return $next()` to keep the request or `return $next($request)` to pass a
+replacement to later middleware and controller injection. The resolved route
+stays the same. Middleware that called `$next` can process the returned response,
+including a response from a later middleware abort.
 HTTP 404 and console status 1 fallbacks remain available. A controller's returned
 `Response` is preserved; other results are wrapped with the resolved status.
 

@@ -80,7 +80,8 @@ class RouterModule
                 // Route middleware is known only after resolution and wraps the controller in one chain.
                 return $this->pipeline($request, [
                     ...$route->getMiddleware(),
-                    function () use (&$route, &$statusCode): Response {
+                    function (RequestContract $request) use (&$route, &$statusCode): Response {
+                        $this->container->instance(RequestContract::class, $request);
                         $response = $this->container->call(
                             $route->getController() . '@' . $route->getMethod(),
                             ['statusCode' => $statusCode, ...$route->getParameters()]

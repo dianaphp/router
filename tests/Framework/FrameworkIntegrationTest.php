@@ -70,7 +70,7 @@ class FrameworkIntegrationTest extends TestCase
     {
         $blocked = new Response('blocked globally', 403);
         $app = new RouterIntegrationApplication('/example', new ClassLoader(), new RouterIntegrationConfig([
-            'middleware' => [static fn () => $blocked],
+            'middleware' => [static fn () => $blocked, IntegrationUnreachableMiddleware::class],
         ]));
 
         self::assertSame($blocked, $app->generateResponse(new HttpRequest('/hello/Ani')));
@@ -96,6 +96,23 @@ class FrameworkIntegrationTest extends TestCase
         ]));
         self::assertSame(404, $app->generateResponse(new HttpRequest('/missing'))->getStatusCode());
         self::assertSame(['global.before', 'resolve', 'global.after'], IntegrationTrace::$events);
+    }
+
+    public function testGlobalMiddlewareCanForwardAReplacementRequestToRoutingAndControllerInjection(): void
+    {
+        $replacement = new HttpRequest('/request');
+        $app = new RouterIntegrationApplication('/example', new ClassLoader(), new RouterIntegrationConfig([
+            'middleware' => [static fn ($request, $next) => $next($replacement)],
+        ]));
+
+        self::assertSame('/request', (string) $app->generateResponse(new HttpRequest('/missing')));
+    }
+
+    public function testRouteMiddlewareCanForwardAReplacementRequestToTheController(): void
+    {
+        $app = new RouterIntegrationApplication('/example', new ClassLoader(), new RouterIntegrationConfig());
+
+        self::assertSame('/replacement', (string) $app->generateResponse(new HttpRequest('/replace-request')));
     }
 
     public function testRouterModuleCanBeConfiguredDirectlyWithExplicitPackages(): void
@@ -187,6 +204,19 @@ class RouterIntegrationConfig extends Config
 
 class RouterIntegrationController
 {
+    #[Get('/request')]
+    public function request(RequestContract $request): string
+    {
+        return $request->getRoute();
+    }
+
+    #[Get('/replace-request')]
+    #[Middleware(IntegrationReplacingMiddleware::class)]
+    public function replacedRequest(RequestContract $request): string
+    {
+        return $request->getRoute();
+    }
+
     #[Get('/hello/:name')]
     #[Middleware(IntegrationRouteMiddleware::class)]
     public function hello(string $name): string
@@ -203,6 +233,7 @@ class RouterIntegrationController
 
     #[Get('/blocked')]
     #[Middleware(IntegrationBlockingMiddleware::class)]
+    #[Middleware(IntegrationUnreachableMiddleware::class)]
     public function blocked(): string
     {
         throw new \LogicException('The blocked controller must never run.');
@@ -273,5 +304,26 @@ class IntegrationBlockingMiddleware
     {
         IntegrationTrace::$events[] = 'route.block';
         return new Response('blocked on route', 401);
+    }
+}
+
+class IntegrationReplacingMiddleware
+{
+    public function run(RequestContract $request, \Closure $next): Response
+    {
+        return $next(new HttpRequest('/replacement'));
+    }
+}
+
+class IntegrationUnreachableMiddleware
+{
+    public function __construct()
+    {
+        throw new \LogicException('Middleware after an abort must never be constructed.');
+    }
+
+    public function run(RequestContract $request, \Closure $next): Response
+    {
+        throw new \LogicException('Middleware after an abort must never run.');
     }
 }
