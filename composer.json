@@ -1,0 +1,42 @@
+{
+    "name": "dianaphp/router",
+    "description": "Attribute-based HTTP and console routing for Diana PHP",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "keywords": ["diana", "php", "router", "routing"],
+    "authors": [
+        {
+            "name": "Antonio Ianzano",
+            "email": "ianzanoan@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "dianaphp/lib": "dev-main",
+        "dianaphp/sdk": "dev-main"
+    },
+    "require-dev": {
+        "dianaphp/framework": "dev-main",
+        "phpunit/phpunit": "^11.5"
+    },
+    "suggest": {
+        "dianaphp/framework": "Required for Framework\\RouterModule and the framework command controllers."
+    },
+    "autoload": {
+        "psr-4": {
+            "Diana\\Router\\": "src/Diana/Router/",
+            "Diana\\Controllers\\": "src/Diana/Router/Framework/Controllers/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Diana\\Router\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "lint": "find src tests -name '*.php' -print0 | xargs -0 -n 1 php -l"
+    }
+}
