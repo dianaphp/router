@@ -5,6 +5,7 @@ namespace Diana\Router;
 use Diana\Contracts\IO\ConsoleRequest;
 use Diana\Contracts\IO\HttpRequest;
 use Diana\Contracts\RequestContract;
+use Diana\Contracts\Router\Route;
 use Diana\Contracts\Router\Router as RouterContract;
 use Diana\Router\Attributes\CommandErrorHandler;
 use Diana\Router\Attributes\HttpErrorHandler;
