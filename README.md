@@ -61,6 +61,49 @@ construct `FileRouterCached($container, $cache)` with an SDK cache implementatio
 It restores cached metadata on construction. When `isLoadedFromCache()` is false,
 register the controller objects and call `generateCache()` explicitly.
 
+## HTTP and command semantics
+
+HTTP methods are case-sensitive uppercase names. Leading and trailing slashes
+are ignored; parameter segments must be nonempty. Matching is per HTTP method:
+the route with the most literal segments wins, regardless of discovery order.
+Ties retain registration order. This also applies to cached routes.
+
+- Unknown paths throw `RouteNotFoundException` (framework response: 404).
+- A known path with an unsupported method throws `MethodNotAllowedException`.
+  `getAllowedMethods()` returns a unique, alphabetically sorted list. The module
+  responds with 405 and an `Allow` header; it does not invoke the 404 handler.
+- `#[Head('/path')]` takes precedence over GET fallback. Otherwise HEAD uses the
+  matching GET route, including its middleware and controller. The application
+  removes the response body after global middleware, retaining status and headers,
+  including on errors. Standalone callers must suppress HEAD bodies themselves.
+- `#[Options('/path')]` takes precedence over automatic OPTIONS. For other known
+  paths, `resolve()` throws `OptionsRequestException` with `getAllowedMethods()`;
+  the module returns an empty 204 response with `Allow`, without route middleware
+  or controller execution. Unknown paths still produce 404.
+- `Allow` includes all methods matching the path, HEAD when GET exists, and
+  OPTIONS. Explicit OPTIONS handlers own their response and headers.
+
+Duplicate HTTP method/path pairs and duplicate command names throw
+`DuplicateRouteException`; the original definition remains registered. Command
+names are case-sensitive and global across controller packages. Positional
+arguments map to the declared names; omitted values allow controller defaults.
+Existing CLI option syntax remains `--name value` or `--flag` (a following token
+that does not start with `--` is consumed as its value).
+
+For framework calls prefer an explicit list, preserving spaces and empty values:
+
+```php
+$app->runCommand('hello', ['two words', '', '--format', 'json']);
+```
+
+The one-string form remains supported: whitespace separates tokens outside
+single/double quotes; quotes are removed and may concatenate token fragments.
+Empty quotes produce an empty argument. Backslash escapes the next character
+outside single quotes, including inside double quotes. There is no variable,
+glob, command or shell expansion. Empty command names, unclosed quotes and
+trailing escapes throw `InvalidArgumentException` before dispatch. With an
+explicit second argument, the command name and arguments are passed verbatim.
+
 ## Framework module
 
 `Diana\Router\Framework\RouterModule` connects the package to the framework.

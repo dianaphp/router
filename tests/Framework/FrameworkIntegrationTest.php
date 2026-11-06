@@ -58,6 +58,8 @@ class FrameworkIntegrationTest extends TestCase
 
         self::assertSame('one:two:json', (string) $app->runCommand('arguments one two --format json'));
         self::assertSame('new:default:text', (string) $app->runCommand('arguments new'));
+        self::assertSame('two words::json', (string) $app->runCommand('arguments', ['two words', '', '--format', 'json']));
+        self::assertSame('two words::text', (string) $app->runCommand("arguments \"two words\" ''"));
     }
 
     public function testGlobalMiddlewareWrapsResolutionRouteMiddlewareAndController(): void
@@ -164,6 +166,18 @@ class FrameworkIntegrationTest extends TestCase
         $warm = new RouterIntegrationApplication('/example', new ClassLoader(), new RouterIntegrationConfig($values));
         self::assertSame('Hello Diana', (string) $warm->generateResponse(new HttpRequest('/hello/Diana')));
         self::assertSame('Hello CLI', (string) $warm->runCommand('hello'));
+        foreach ([$cold, $warm] as $app) {
+            $head = $app->generateResponse(new HttpRequest('/hello/Ani', 'HEAD'));
+            self::assertSame(200, $head->getStatusCode());
+            self::assertSame('', (string) $head);
+            $options = $app->generateResponse(new HttpRequest('/hello/Ani', 'OPTIONS'));
+            self::assertSame(204, $options->getStatusCode());
+            self::assertSame('', (string) $options);
+            self::assertSame('GET, HEAD, OPTIONS', $options->getHeader('Allow'));
+            $wrongMethod = $app->generateResponse(new HttpRequest('/hello/Ani', 'POST'));
+            self::assertSame(405, $wrongMethod->getStatusCode());
+            self::assertSame('GET, HEAD, OPTIONS', $wrongMethod->getHeader('Allow'));
+        }
     }
 
     public function testModuleSuppliesDefaultBindingsWhenNoRouterIsConfigured(): void

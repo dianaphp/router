@@ -117,6 +117,10 @@ class FileRouter extends Router implements RouterContract
                 throw new MissingArgumentsException('Command does not provide a name.');
             }
 
+            if (isset($this->commands[$command])) {
+                throw new DuplicateRouteException('Command [' . $command . '] has already been assigned.');
+            }
+
             // Keep supporting the legacy positional form: Command('demo', 'first', 'second').
             $arguments = $args['args'] ?? $args[1] ?? [];
             if (!is_array($arguments)) {

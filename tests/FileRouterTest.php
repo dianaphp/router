@@ -11,6 +11,7 @@ use Diana\Router\Exceptions\MissingArgumentsException;
 use Diana\Router\Exceptions\RouteNotFoundException;
 use Diana\Router\Exceptions\UnsupportedRequestTypeException;
 use Diana\Router\FileRouter;
+use Diana\Router\Exceptions\MethodNotAllowedException;
 use Diana\Router\Route;
 use Diana\Router\Tests\Controllers\DuplicateRouteController;
 use Diana\Router\Tests\Controllers\MultipleRouteControllerWithPrefix;
@@ -101,7 +102,7 @@ class FileRouterTest extends TestCase
         $this->assertEquals([], $route->getParameters());
         $this->assertEquals(['test'], $route->getSegments());
 
-        $this->expectException(RouteNotFoundException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $this->router->resolve(new HttpRequest('/test', 'POST'));
         $this->router->resolve(new HttpRequest('/test', 'DELETE'));
         $this->router->resolve(new HttpRequest('/test', 'PATCH'));
@@ -128,7 +129,7 @@ class FileRouterTest extends TestCase
         $this->assertEquals([], $route->getParameters());
         $this->assertEquals(['prefix', 'post'], $route->getSegments());
 
-        $this->expectException(RouteNotFoundException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $this->router->resolve(new HttpRequest('/prefix/post', 'GET'));
         $this->router->resolve(new HttpRequest('/prefix/post', 'DELETE'));
         $this->router->resolve(new HttpRequest('/prefix/post', 'PATCH'));
@@ -155,7 +156,7 @@ class FileRouterTest extends TestCase
         $this->assertEquals([], $route->getParameters());
         $this->assertEquals(['prefix', 'delete'], $route->getSegments());
 
-        $this->expectException(RouteNotFoundException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $this->router->resolve(new HttpRequest('/prefix/delete', 'POST'));
         $this->router->resolve(new HttpRequest('/prefix/delete', 'GET'));
         $this->router->resolve(new HttpRequest('/prefix/delete', 'PATCH'));
@@ -182,7 +183,7 @@ class FileRouterTest extends TestCase
         $this->assertEquals([], $route->getParameters());
         $this->assertEquals(['prefix', 'patch'], $route->getSegments());
 
-        $this->expectException(RouteNotFoundException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $this->router->resolve(new HttpRequest('/prefix/patch', 'POST'));
         $this->router->resolve(new HttpRequest('/prefix/patch', 'GET'));
         $this->router->resolve(new HttpRequest('/prefix/patch', 'DELETE'));
@@ -209,7 +210,7 @@ class FileRouterTest extends TestCase
         $this->assertEquals([], $route->getParameters());
         $this->assertEquals(['prefix', 'put'], $route->getSegments());
 
-        $this->expectException(RouteNotFoundException::class);
+        $this->expectException(MethodNotAllowedException::class);
         $this->router->resolve(new HttpRequest('/prefix/put', 'POST'));
         $this->router->resolve(new HttpRequest('/prefix/put', 'GET'));
         $this->router->resolve(new HttpRequest('/prefix/put', 'DELETE'));

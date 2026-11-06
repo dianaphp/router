@@ -3,6 +3,8 @@
 namespace Diana\Router\Framework;
 
 use Closure;
+use Diana\Router\Exceptions\MethodNotAllowedException;
+use Diana\Router\Exceptions\OptionsRequestException;
 use Diana\Contracts\Core\Container;
 use Diana\Contracts\Core\Pipeline;
 use Diana\Contracts\Event\Dispatcher;
@@ -59,6 +61,12 @@ class RouterModule
             function (RequestContract $request, Closure $next) use (&$route, &$statusCode): Response {
                 try {
                     $route = $this->router->resolve($request);
+                } catch (MethodNotAllowedException | OptionsRequestException $exception) {
+                    return new Response(
+                        $exception instanceof OptionsRequestException ? '' : 'HTTP Error 405 - Method not allowed.',
+                        $exception->getCode(),
+                        ['Allow' => implode(', ', $exception->getAllowedMethods())]
+                    );
                 } catch (RouteNotFoundException) {
                     $statusCode = 404;
                     $route = $this->router->getErrorRoute();

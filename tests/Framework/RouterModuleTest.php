@@ -45,6 +45,24 @@ class RouterModuleTest extends TestCase
         self::assertSame('HTTP Error 404 - This page could not be found.', (string) $response);
     }
 
+    public function testMethodMismatchAndAutomaticOptionsReturnStatusAndAllowWithoutControllerExecution(): void
+    {
+        foreach ([
+            new \Diana\Router\Exceptions\MethodNotAllowedException(['GET', 'HEAD', 'OPTIONS']),
+            new \Diana\Router\Exceptions\OptionsRequestException(['GET', 'HEAD', 'OPTIONS']),
+        ] as $exception) {
+            $router = $this->createMock(Router::class);
+            $router->method('resolve')->willThrowException($exception);
+            $router->expects(self::never())->method('getErrorRoute');
+            $response = ($this->module($router))(new HttpRequest('/example'));
+            self::assertSame($exception->getCode(), $response->getStatusCode());
+            self::assertSame('GET, HEAD, OPTIONS', $response->getHeader('Allow'));
+            if ($exception->getCode() === 204) {
+                self::assertSame('', (string) $response);
+            }
+        }
+    }
+
     public function testCommandNotFoundFallbackRemainsAvailable(): void
     {
         $router = $this->createMock(Router::class);

@@ -13,6 +13,8 @@ use Diana\Router\Exceptions\CommandNotFoundException;
 use Diana\Router\Exceptions\RouteNotFoundException;
 use Diana\Router\Exceptions\UnsupportedRequestTypeException;
 use Diana\Support\Helpers\Str;
+use Diana\Router\Exceptions\MethodNotAllowedException;
+use Diana\Router\Exceptions\OptionsRequestException;
 
 abstract class Router implements RouterContract
 {
@@ -28,6 +30,8 @@ abstract class Router implements RouterContract
 
     /**
      * @throws UnsupportedRequestTypeException
+     * @throws MethodNotAllowedException
+     * @throws OptionsRequestException
      * @throws RouteNotFoundException
      * @throws CommandNotFoundException
      */
@@ -45,32 +49,70 @@ abstract class Router implements RouterContract
     }
 
     /**
+     * @throws MethodNotAllowedException
+     * @throws OptionsRequestException
      * @throws RouteNotFoundException
      */
     protected function resolveRoute(string $path, string $method): Route
     {
-        $trim = trim($path, '/');
-        $segments = explode('/', $trim);
-        $segmentCount = count($segments);
+        $segments = explode('/', trim($path, '/'));
+        $matches = [];
 
-        foreach ($this->routes[$method] ?? [] as $route) {
-            $params = [];
-            $routeSegments = $route->getSegments();
-            if ($segmentCount != count($routeSegments)) {
+        foreach ($this->routes as $registeredMethod => $routes) {
+            if ($registeredMethod === '*') {
                 continue;
             }
-
-            for ($i = 0; $i < $segmentCount; $i++) {
-                if (isset($routeSegments[$i][0]) && $routeSegments[$i][0] == ':') {
-                    $params[substr($routeSegments[$i], 1)] = $segments[$i];
-                } elseif ($routeSegments[$i] != $segments[$i]) {
-                    continue 2;
+            $best = null;
+            $bestScore = -1;
+            foreach ($routes as $route) {
+                $params = [];
+                $score = 0;
+                $routeSegments = $route->getSegments();
+                if (count($segments) !== count($routeSegments)) {
+                    continue;
+                }
+                foreach ($routeSegments as $i => $segment) {
+                    if (str_starts_with($segment, ':')) {
+                        if ($segments[$i] === '') {
+                            continue 2;
+                        }
+                        $params[substr($segment, 1)] = $segments[$i];
+                    } elseif ($segment !== $segments[$i]) {
+                        continue 2;
+                    } else {
+                        $score++;
+                    }
+                }
+                // More literal segments win; equal specificity retains registration order.
+                if ($score > $bestScore) {
+                    $best = clone $route;
+                    $best->setParameters($params);
+                    $bestScore = $score;
                 }
             }
+            if ($best !== null) {
+                $matches[$registeredMethod] = $best;
+            }
+        }
 
-            $route = clone $route;
-            $route->setParameters($params);
-            return $route;
+        if (isset($matches[$method])) {
+            return $matches[$method];
+        }
+        if ($method === 'HEAD' && isset($matches['GET'])) {
+            return $matches['GET'];
+        }
+        if ($matches !== []) {
+            $allowed = array_keys($matches);
+            if (isset($matches['GET'])) {
+                $allowed[] = 'HEAD';
+            }
+            $allowed[] = 'OPTIONS';
+            $allowed = array_values(array_unique($allowed));
+            sort($allowed);
+            if ($method === 'OPTIONS') {
+                throw new OptionsRequestException($allowed);
+            }
+            throw new MethodNotAllowedException($allowed);
         }
 
         throw new RouteNotFoundException("The route [{$path}] using the method [{$method}] could not have been found.");
